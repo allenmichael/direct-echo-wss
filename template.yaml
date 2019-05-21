@@ -1,0 +1,86 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Resources:
+
+  MyLambdaRouteHandlerFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: index.handler
+      Timeout: 30
+      Runtime: nodejs10.x
+      CodeUri: ./
+      Policies:
+        - AWSLambdaFullAccess
+        - CloudWatchLogsFullAccess
+
+  MyWebSocketApi:
+    Type: AWS::ApiGatewayV2::Api
+    Properties:
+      Name: MyWebSocketApiRouteResponse
+      ProtocolType: WEBSOCKET
+      RouteSelectionExpression: "$request.body.action"
+
+  TestRoute:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref MyWebSocketApi
+      RouteKey: test
+      AuthorizationType: NONE
+      Target: !Join
+        - '/'
+        - - 'integrations'
+          - !Ref TestLambdaIntegration
+
+  TestLambdaIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref MyWebSocketApi
+      Description: Test Integration
+      IntegrationType: AWS
+      IntegrationUri: 
+        Fn::Sub:
+            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambdaRouteHandlerFunction.Arn}/invocations
+  
+  TestLambdaIntegrationResponse:
+    Type: AWS::ApiGatewayV2::IntegrationResponse
+    Properties: 
+      ApiId: !Ref MyWebSocketApi
+      IntegrationId: !Ref TestLambdaIntegration
+      IntegrationResponseKey: $default
+
+  MyRouteResponse:
+    Type: AWS::ApiGatewayV2::RouteResponse
+    Properties:
+      RouteId: !Ref TestRoute
+      ApiId: !Ref MyWebSocketApi
+      RouteResponseKey: $default
+
+  Deployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    DependsOn:
+      - TestRoute
+    Properties:
+      ApiId: !Ref MyWebSocketApi
+
+  Stage:
+    Type: AWS::ApiGatewayV2::Stage
+    Properties:
+      StageName: v1
+      Description: Version 1 'stage'
+      DeploymentId: !Ref Deployment
+      ApiId: !Ref MyWebSocketApi
+
+  ApiGatewayLambdaInvokePermission:
+    Type: AWS::Lambda::Permission
+    DependsOn:
+      - MyWebSocketApi
+      - MyLambdaRouteHandlerFunction
+    Properties:
+      Action: lambda:InvokeFunction
+      FunctionName: !Ref MyLambdaRouteHandlerFunction
+      Principal: apigateway.amazonaws.com
+
+Outputs:
+    MyWebSocketApi:
+      Description: "API Gateway endpoint URL for Prod stage for Hello World function"
+      Value: !Sub "https://${MyWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/v1"

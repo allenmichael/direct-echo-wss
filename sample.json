@@ -1,0 +1,33 @@
+{
+    "requestContext": {
+        "routeKey": "test",
+        "messageId": "aAFdNdJNvHcCEWA=",
+        "eventType": "MESSAGE",
+        "extendedRequestId": "aAFdNF5KPHcFbPQ=",
+        "requestTime": "20/May/2019:21:29:56 +0000",
+        "messageDirection": "IN",
+        "stage": "v1",
+        "connectedAt": 1558387786888,
+        "requestTimeEpoch": 1558387796542,
+        "identity": {
+            "cognitoIdentityPoolId": null,
+            "cognitoIdentityId": null,
+            "principalOrgId": null,
+            "cognitoAuthenticationType": null,
+            "userArn": null,
+            "userAgent": null,
+            "accountId": null,
+            "caller": null,
+            "sourceIp": "205.251.233.178",
+            "accessKey": null,
+            "cognitoAuthenticationProvider": null,
+            "user": null
+        },
+        "requestId": "aAFdNF5KPHcFbPQ=",
+        "domainName": "tpyv79lhu2.execute-api.us-west-2.amazonaws.com",
+        "connectionId": "aAFbsdJKPHcCEWA=",
+        "apiId": "tpyv79lhu2"
+    },
+    "body": "{\"action\":\"test\"}",
+    "isBase64Encoded": false
+}
