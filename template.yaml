@@ -8,7 +8,7 @@ Resources:
       Handler: index.handler
       Timeout: 30
       Runtime: nodejs10.x
-      CodeUri: ./
+      CodeUri: src/
       Policies:
         - AWSLambdaFullAccess
         - CloudWatchLogsFullAccess
@@ -36,7 +36,7 @@ Resources:
     Properties:
       ApiId: !Ref MyWebSocketApi
       Description: Test Integration
-      IntegrationType: AWS
+      IntegrationType: AWS_PROXY
       IntegrationUri: 
         Fn::Sub:
             arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambdaRouteHandlerFunction.Arn}/invocations
