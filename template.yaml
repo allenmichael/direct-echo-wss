@@ -1,87 +1,87 @@
-AWSTemplateFormatVersion: '2010-09-09'
+AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
+Parameters:
+  StackTagName:
+    Type: String
+    Description: Stack Name (injected by Stackery at deployment time)
+  EnvironmentTagName:
+    Type: String
+    Description: Environment Name (injected by Stackery at deployment time)
+  EnvironmentAPIGatewayStageName:
+    Type: String
+    Description: Environment name used for API Gateway Stage names (injected by Stackery at deployment time)
 Resources:
-
-  MyLambdaRouteHandlerFunction:
-    Type: AWS::Serverless::Function
-    Properties:
-      Handler: index.handler
-      Timeout: 30
-      Runtime: nodejs10.x
-      CodeUri: src/
-      Policies:
-        - AWSLambdaFullAccess
-        - CloudWatchLogsFullAccess
-
-  MyWebSocketApi:
+  Websocket:
     Type: AWS::ApiGatewayV2::Api
     Properties:
-      Name: MyWebSocketApiRouteResponse
+      Description: !Sub
+        - ${ResourceName} From Stack ${StackTagName} Environment ${EnvironmentTagName}
+        - ResourceName: Websocket
+      Name: !Sub
+        - ${StackTagName}-${EnvironmentTagName}-${ResourceName}
+        - ResourceName: Websocket
       ProtocolType: WEBSOCKET
-      RouteSelectionExpression: "$request.body.action"
-
-  TestRoute:
-    Type: AWS::ApiGatewayV2::Route
-    Properties:
-      ApiId: !Ref MyWebSocketApi
-      RouteKey: test
-      AuthorizationType: NONE
-      Target: !Join
-        - '/'
-        - - 'integrations'
-          - !Ref TestLambdaIntegration
-
-  TestLambdaIntegration:
-    Type: AWS::ApiGatewayV2::Integration
-    Properties:
-      ApiId: !Ref MyWebSocketApi
-      Description: Test Integration
-      IntegrationType: AWS_PROXY
-      IntegrationUri: 
-        Fn::Sub:
-            arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${MyLambdaRouteHandlerFunction.Arn}/invocations
-  
-  TestLambdaIntegrationResponse:
-    Type: AWS::ApiGatewayV2::IntegrationResponse
-    Properties: 
-      ApiId: !Ref MyWebSocketApi
-      IntegrationId: !Ref TestLambdaIntegration
-      IntegrationResponseKey: $default
-
-  MyRouteResponse:
-    Type: AWS::ApiGatewayV2::RouteResponse
-    Properties:
-      RouteId: !Ref TestRoute
-      ApiId: !Ref MyWebSocketApi
-      RouteResponseKey: $default
-
-  Deployment:
-    Type: AWS::ApiGatewayV2::Deployment
-    DependsOn:
-      - TestRoute
-    Properties:
-      ApiId: !Ref MyWebSocketApi
-
-  Stage:
+      RouteSelectionExpression: $request.body.action
+  WebsocketStage:
     Type: AWS::ApiGatewayV2::Stage
     Properties:
-      StageName: v1
-      Description: Version 1 'stage'
-      DeploymentId: !Ref Deployment
-      ApiId: !Ref MyWebSocketApi
-
-  ApiGatewayLambdaInvokePermission:
-    Type: AWS::Lambda::Permission
+      ApiId: !Ref Websocket
+      StageName: !Ref EnvironmentAPIGatewayStageName
+      DeploymentId: !Ref WebsocketDeployment
+  WebsocketDeployment:
+    Type: AWS::ApiGatewayV2::Deployment
+    Properties:
+      ApiId: !Ref Websocket
     DependsOn:
-      - MyWebSocketApi
-      - MyLambdaRouteHandlerFunction
+      - WebsocketRoutetest
+  WebsocketRoutetest:
+    Type: AWS::ApiGatewayV2::Route
+    Properties:
+      ApiId: !Ref Websocket
+      RouteKey: test
+      Target: !Sub integrations/${WebsocketRoutetestIntegration}
+  WebsocketRoutetestResponse:
+    Type: AWS::ApiGatewayV2::RouteResponse
+    Properties:
+      ApiId: !Ref Websocket
+      RouteId: !Ref WebsocketRoutetest
+      RouteResponseKey: $default
+  WebsocketRoutetestIntegration:
+    Type: AWS::ApiGatewayV2::Integration
+    Properties:
+      ApiId: !Ref Websocket
+      IntegrationType: AWS_PROXY
+      IntegrationUri: !Sub arn:${AWS::Partition}:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${WSResponse.Arn}/invocations
+  WebsocketRoutetestIntegrationPermission:
+    Type: AWS::Lambda::Permission
     Properties:
       Action: lambda:InvokeFunction
-      FunctionName: !Ref MyLambdaRouteHandlerFunction
+      FunctionName: !Ref WSResponse
       Principal: apigateway.amazonaws.com
-      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${MyWebSocketApi}/*/test
+      SourceArn: !Sub arn:${AWS::Partition}:execute-api:${AWS::Region}:${AWS::AccountId}:${Websocket}/*/test
+  WebsocketRoutetestIntegrationResponse:
+    Type: AWS::ApiGatewayV2::IntegrationResponse
+    Properties:
+      ApiId: !Ref Websocket
+      IntegrationId: !Ref WebsocketRoutetestIntegration
+      IntegrationResponseKey: $default
+  WSResponse:
+    Type: AWS::Serverless::Function
+    Properties:
+      FunctionName: !Sub ${AWS::StackName}-WSResponse
+      Description: !Sub
+        - Stack ${StackTagName} Environment ${EnvironmentTagName} Function ${ResourceName}
+        - ResourceName: WSResponse
+      CodeUri: src
+      Handler: index.handler
+      Runtime: nodejs10.x
+      MemorySize: 3008
+      Timeout: 30
+      Tracing: Active
+      Policies:
+        - AWSXrayWriteOnlyAccess
 
 Outputs:
-    MyWebSocketApi:
-      Description: "API Gateway endpoint URL for Prod stage for Hello World function"
-      Value: !Sub "https://${MyWebSocketApi}.execute-api.${AWS::Region}.amazonaws.com/v1"
+  Websocket:
+    Description: "WebSocket connection URI"
+    Value: !Sub "wss://${Websocket}.execute-api.${AWS::Region}.amazonaws.com/v1"
