@@ -1,15 +1,5 @@
 AWSTemplateFormatVersion: 2010-09-09
 Transform: AWS::Serverless-2016-10-31
-Parameters:
-  StackTagName:
-    Type: String
-    Description: Stack Name (injected by Stackery at deployment time)
-  EnvironmentTagName:
-    Type: String
-    Description: Environment Name (injected by Stackery at deployment time)
-  EnvironmentAPIGatewayStageName:
-    Type: String
-    Description: Environment name used for API Gateway Stage names (injected by Stackery at deployment time)
 Resources:
   Websocket:
     Type: AWS::ApiGatewayV2::Api
@@ -80,8 +70,18 @@ Resources:
       Tracing: Active
       Policies:
         - AWSXrayWriteOnlyAccess
+Parameters:
+  StackTagName:
+    Type: String
+    Description: Stack Name (injected by Stackery at deployment time)
+  EnvironmentTagName:
+    Type: String
+    Description: Environment Name (injected by Stackery at deployment time)
+  EnvironmentAPIGatewayStageName:
+    Type: String
+    Description: Environment name used for API Gateway Stage names (injected by Stackery at deployment time)
 
 Outputs:
-  Websocket:
+  MyWebSocketApi:
     Description: "WebSocket connection URI"
-    Value: !Sub "wss://${Websocket}.execute-api.${AWS::Region}.amazonaws.com/v1"
+    Value: !Sub "wss://${Websocket}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentAPIGatewayStageName}"
