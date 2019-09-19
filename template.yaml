@@ -24,6 +24,10 @@ Resources:
       ApiId: !Ref Websocket
     DependsOn:
       - WebsocketRoutetest
+      - WebsocketRoutetestResponse
+      - WebsocketRoutetestIntegration
+      - WSResponse
+      - WebsocketRoutetestIntegrationResponse
   WebsocketRoutetest:
     Type: AWS::ApiGatewayV2::Route
     Properties:
@@ -80,8 +84,7 @@ Parameters:
   EnvironmentAPIGatewayStageName:
     Type: String
     Description: Environment name used for API Gateway Stage names (injected by Stackery at deployment time)
-
 Outputs:
   MyWebSocketApi:
-    Description: "WebSocket connection URI"
-    Value: !Sub "wss://${Websocket}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentAPIGatewayStageName}"
+    Description: WebSocket connection URI
+    Value: !Sub wss://${Websocket}.execute-api.${AWS::Region}.amazonaws.com/${EnvironmentAPIGatewayStageName}
